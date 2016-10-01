@@ -17,6 +17,7 @@ EOS
 require 'fileutils'
 require 'optparse'
 require 'nkf'
+require 'open3'
 
 # バックアップファイルの拡張子
 suffix = '.bak'
@@ -52,7 +53,7 @@ opt.on('-f FILE', '--file=FILE',   '置換対象ファイル名をファイル�
 opt.parse!(ARGV)
 
 def confirm(msg)
-  print "\x1b[0;33m" + msg + "\x1b[0m "
+  print "\x1b[0;34m" + msg + "\x1b[0m "
   $stdout.flush()
   a = $stdin.readline().strip().upcase
   return a
@@ -68,9 +69,13 @@ def ignore?(filename)
 end
 
 def info(msg)
-  puts "\x1b[0;31m#{msg}\x1b[0m"
+  puts "\x1b[0;34m#{msg}\x1b[0m"
 end
 
+def color_diff(file1, file2)
+  out, err, status = Open3.capture3("diff", "-u", file1, file2)
+  print out.gsub(/^(\+.*)$/) { "\x1b[0;32m#{$1}\x1b[0m" }.gsub(/^(-.*)$/) { "\x1b[0;31m#{$1}\x1b[0m" }
+end
 
 # mlreplace.rbがなければ作る
 if not File.readable?(settingFile)
@@ -207,6 +212,7 @@ files.each do |filename|
   end
 
   content = f.read()
+
   f.close()
   if content.include?("\r\n")
     if $from.instance_of?(String)
@@ -219,6 +225,11 @@ files.each do |filename|
     from = $from
     to = $to
   end
+
+  content.force_encoding(Encoding::BINARY)
+  from.force_encoding(Encoding::BINARY)
+  to.force_encoding(Encoding::BINARY)
+
   replaced = content.gsub(from, to)
 
   if content == replaced
@@ -230,7 +241,7 @@ files.each do |filename|
     of.print replaced
     of.close()
     if $opt_d
-      system('diff', '-u', filename, tmpfilename)
+      color_diff(filename, tmpfilename)
 
       a = confirm('置換を実行してよろしいですか？(Y/n/q/a)')
       if a == 'N'
