@@ -22,7 +22,7 @@ require 'open3'
 # バックアップファイルの拡張子
 suffix = '.bak'
 # 無視するファイルのglobパターン（~/.mlreplace.rbにより上書きされる可能性あり）
-$ignore_patterns = [".svn", ".git", "CVS", "*.bak", ".DS_Store"]
+$ignore_patterns = ENV['MLREPLACE_IGNORE'].nil? ? [".svn", ".git", "CVS", "*.bak", ".DS_Store", ".bundle", "node_modules", "tags"] : ENV['MLREPLACE_IGNORE'].split(':')
 
 # 置換文字列設定ファイルのパス
 settingFile = (ENV['HOME'] || File.dirname(__FILE__)) + '/.mlreplace.rb'
